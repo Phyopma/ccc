@@ -131,10 +131,13 @@ function App() {
       formData.append("file", file);
       formData.append("boxes", JSON.stringify(boxesByPage));
 
-      const submitResponse = await fetch("http://localhost:5000/api/submit", {
-        method: "POST",
-        body: formData,
-      });
+      const submitResponse = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await submitResponse.json();
 

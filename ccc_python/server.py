@@ -3,9 +3,18 @@ from flask_cors import CORS
 import os
 import json
 from werkzeug.utils import secure_filename
+from PyPDF2 import PdfReader
+import camelot
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept"],
+        "expose_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Configure upload folder
 UPLOAD_FOLDER = 'uploads'
@@ -24,6 +33,7 @@ def allowed_file(filename):
 @app.route('/api/submit', methods=['POST'])
 def submit_pdf():
     try:
+        print("Received request")
         # Check if PDF file is present in request
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -40,15 +50,34 @@ def submit_pdf():
         if not boxes_data:
             return jsonify({'error': 'No boxes data provided'}), 400
 
-        try:
-            boxes = json.loads(boxes_data)
-        except json.JSONDecodeError:
-            return jsonify({'error': 'Invalid boxes data format'}), 400
-
         # Save the PDF file
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
+
+        # Get PDF height
+        pdf_reader = PdfReader(filepath)
+
+        # Process boxes data
+        boxes_data = request.form.get('boxes')
+        if not boxes_data:
+            return jsonify({'error': 'No boxes data provided'}), 400
+
+        try:
+            boxes = json.loads(boxes_data)
+            for page_num in boxes:
+                pdf_height = float(pdf_reader.pages[int(page_num)].mediabox[3])
+                for box in boxes[page_num]:
+                    box['x1'] = box['x']
+                    box['y1'] = pdf_height - box['y']
+                    box['x2'] = box['x'] + box['width']
+                    box['y2'] = pdf_height - (box['y'] + box['height'])
+                    del box['width']
+                    del box['x']
+                    del box['y']
+                    del box['height']
+        except json.JSONDecodeError:
+            return jsonify({'error': 'Invalid boxes data format'}), 400
 
         # Save the boxes data
         boxes_filename = f"{filename}_boxes.json"
@@ -57,6 +86,16 @@ def submit_pdf():
         with open(boxes_filepath, 'w') as f:
             json.dump(boxes, f)
 
+        for page_num in boxes:
+            # want in the form of "x1, x2, x3,x4"
+            target_areas = [f"{box['x1']}, {box['y1']}, {
+                box['x2']}, {box['y2']}"
+                for box in boxes[page_num]]
+
+            tables = camelot.read_pdf(filepath, pages=str(page_num),
+                                      flavor='stream', table_areas=target_areas)
+            tables.export(f'{filepath}_page{page_num}.csv', f='csv')
+        print("done processing")
         return jsonify({
             'message': 'PDF and boxes data received successfully',
             'pdf_path': filepath,
