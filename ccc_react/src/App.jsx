@@ -3,12 +3,14 @@ import PDFUploader from "./components/PDFUploader";
 import PDFViewer from "./components/PDFViewer";
 
 function App() {
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [pdfFile, setPdfFile] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [previewBox, setPreviewBox] = useState(null);
   const [scale] = useState(1.0);
-  const [boxesByPage, setBoxesByPage] = useState({});
+  const [boxesByFile, setBoxesByFile] = useState({});
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const stageRef = useRef(null);
@@ -19,16 +21,23 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log("Current boxesByPage state:", boxesByPage);
-  }, [boxesByPage]);
+    if (selectedFiles.length > 0) {
+      setPdfFile(URL.createObjectURL(selectedFiles[currentFileIndex]));
+      setCurrentPage(1);
+    }
+  }, [currentFileIndex, selectedFiles]);
 
   const onFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setPdfFile(URL.createObjectURL(file));
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setSelectedFiles(files);
+      setCurrentFileIndex(0);
       setError(null);
-      setBoxesByPage({});
     }
+  };
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleMouseDown = (e, altKey) => {
@@ -36,12 +45,20 @@ function App() {
       setIsDrawing(true);
       setStartPos(e);
 
-      if (!boxesByPage[currentPage]) {
-        setBoxesByPage((prev) => ({ ...prev, [currentPage]: [] }));
+      if (!boxesByFile[currentFileIndex]) {
+        setBoxesByFile((prev) => ({ ...prev, [currentFileIndex]: {} }));
+      }
+      if (!boxesByFile[currentFileIndex][currentPage]) {
+        setBoxesByFile((prev) => ({
+          ...prev,
+          [currentFileIndex]: {
+            ...prev[currentFileIndex],
+            [currentPage]: [],
+          },
+        }));
       }
     } else {
-      // Check if clicked on a box to delete it
-      const currentBoxes = boxesByPage[currentPage] || [];
+      const currentBoxes = boxesByFile[currentFileIndex]?.[currentPage] || [];
       const clickedBoxIndex = currentBoxes.findIndex(
         (box) =>
           e.x >= box.x &&
@@ -53,10 +70,13 @@ function App() {
       if (clickedBoxIndex !== -1) {
         const updatedBoxes = [...currentBoxes];
         updatedBoxes.splice(clickedBoxIndex, 1);
-        setBoxesByPage({
-          ...boxesByPage,
-          [currentPage]: updatedBoxes,
-        });
+        setBoxesByFile((prev) => ({
+          ...prev,
+          [currentFileIndex]: {
+            ...prev[currentFileIndex],
+            [currentPage]: updatedBoxes,
+          },
+        }));
       }
     }
   };
@@ -83,11 +103,14 @@ function App() {
         height: Math.abs(e.y - startPos.y),
       };
 
-      const currentBoxes = boxesByPage[currentPage] || [];
-      setBoxesByPage({
-        ...boxesByPage,
-        [currentPage]: [...currentBoxes, newBox],
-      });
+      const currentBoxes = boxesByFile[currentFileIndex]?.[currentPage] || [];
+      setBoxesByFile((prev) => ({
+        ...prev,
+        [currentFileIndex]: {
+          ...prev[currentFileIndex],
+          [currentPage]: [...currentBoxes, newBox],
+        },
+      }));
     }
     setPreviewBox(null);
     setIsDrawing(false);
@@ -113,42 +136,35 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    if (!pdfFile) {
-      setError("Please upload a PDF file first");
+    if (selectedFiles.length === 0) {
+      setError("Please upload PDF files first");
       return;
     }
 
     try {
-      const formData = new FormData();
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const formData = new FormData();
+        formData.append("file", selectedFiles[i]);
+        formData.append("boxes", JSON.stringify(boxesByFile[i] || {}));
 
-      // Get the original File object from the URL
-      const response = await fetch(pdfFile);
-      const blob = await response.blob();
-      const file = new File([blob], "document.pdf", {
-        type: "application/pdf",
-      });
+        const submitResponse = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
-      formData.append("file", file);
-      formData.append("boxes", JSON.stringify(boxesByPage));
+        const data = await submitResponse.json();
 
-      const submitResponse = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
-        {
-          method: "POST",
-          body: formData,
+        if (!submitResponse.ok) {
+          throw new Error(data.error || "Failed to submit PDF and boxes");
         }
-      );
 
-      const data = await submitResponse.json();
-
-      if (!submitResponse.ok) {
-        throw new Error(data.error || "Failed to submit PDF and boxes");
+        console.log(`Submission successful for file ${i + 1}:`, data);
       }
-
-      console.log("Submission successful:", data);
-      // You can add a success message or additional handling here
     } catch (err) {
-      console.error("Error submitting PDF:", err);
+      console.error("Error submitting PDFs:", err);
       setError(err.message);
     }
   };
@@ -160,7 +176,11 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             PDF Annotation Tool
           </h1>
-          <PDFUploader onFileChange={onFileChange} error={error} />
+          <PDFUploader
+            onFileChange={onFileChange}
+            error={error}
+            selectedFiles={selectedFiles}
+          />
         </div>
 
         {pdfFile && (
@@ -177,7 +197,7 @@ function App() {
                 </ul>
               </div>
 
-              <div className="relative  rounded-lg flex justify-center p-4">
+              <div className="relative rounded-lg flex justify-center p-4">
                 <PDFViewer
                   file={pdfFile}
                   currentPage={currentPage}
@@ -186,12 +206,13 @@ function App() {
                   onLoadSuccess={onDocumentLoadSuccess}
                   onLoadError={onDocumentLoadError}
                   boxes={[
-                    ...(boxesByPage[currentPage] || []),
+                    ...(boxesByFile[currentFileIndex]?.[currentPage] || []),
                     ...(previewBox ? [previewBox] : []),
                   ]}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </div>
@@ -200,49 +221,30 @@ function App() {
                 <button
                   onClick={handleSubmit}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
-                  Submit To Analyze
-                </button>
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage <= 1}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
-                  <svg
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Previous
+                  Submit All Files
                 </button>
                 <button
                   onClick={() =>
-                    setCurrentPage(Math.min(numPages, currentPage + 1))
+                    setCurrentFileIndex(Math.max(0, currentFileIndex - 1))
                   }
-                  disabled={currentPage >= numPages}
+                  disabled={currentFileIndex <= 0}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
-                  Next
-                  <svg
-                    className="h-5 w-5 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  Previous File
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentFileIndex(
+                      Math.min(selectedFiles.length - 1, currentFileIndex + 1)
+                    )
+                  }
+                  disabled={currentFileIndex >= selectedFiles.length - 1}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                  Next File
                 </button>
               </div>
               <div className="text-sm text-gray-600">
-                Page {currentPage} of {numPages || "-"}
+                File {currentFileIndex + 1} of {selectedFiles.length} | Page{" "}
+                {currentPage} of {numPages || "-"}
               </div>
             </div>
           </>
