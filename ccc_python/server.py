@@ -1,11 +1,3 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import os
-import json
-from werkzeug.utils import secure_filename
-from PyPDF2 import PdfReader
-import camelot
-
 app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
@@ -88,9 +80,8 @@ def submit_pdf():
 
         for page_num in boxes:
             # want in the form of "x1, x2, x3,x4"
-            target_areas = [f"{box['x1']}, {box['y1']}, {
-                box['x2']}, {box['y2']}"
-                for box in boxes[page_num]]
+            target_areas = [f"{box['x1']}, {box['y1']}, {box['x2']}, {box['y2']}"
+                            for box in boxes[page_num]]
 
             tables = camelot.read_pdf(filepath, pages=str(page_num),
                                       flavor='stream', table_areas=target_areas)
