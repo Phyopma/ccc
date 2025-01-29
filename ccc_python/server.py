@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sys
-
+import json
 from config import Config, CORSConfig
 from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data
 from pdf_processor import process_pdf_with_camelot
@@ -18,45 +18,64 @@ app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
 def submit_pdf():
     try:
         print("Received request", flush=True)
-        # Check if PDF file is present in request
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-
-        if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Only PDF files are allowed'}), 400
+        # Check if files are present in request
+        files = request.files.to_dict()
+        if not files:
+            return jsonify({'error': 'No files provided'}), 400
 
         # Get boxes data
         boxes_data = request.form.get('boxes')
         if not boxes_data:
             return jsonify({'error': 'No boxes data provided'}), 400
 
-        # Save the PDF file
-        filepath, filename = save_pdf_file(file)
-
-        # Process boxes data
         try:
-            boxes = process_boxes_data(boxes_data, filepath)
-            print("Processed boxes data:", boxes, flush=True)
-        except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            boxes = json.loads(boxes_data)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'Invalid boxes data format'}), 400
 
-        # Save the boxes data
-        print("Processing boxes data to save...", flush=True)
-        boxes_filepath = save_boxes_data(boxes, filename)
+        results = []
+        for file_key, file in files.items():
+            if file.filename == '':
+                continue
 
-        # Process PDF with camelot
-        output_files = process_pdf_with_camelot(filepath, boxes)
+            if not allowed_file(file.filename):
+                return jsonify({'error': f'Invalid file type for {file.filename}. Only PDF files are allowed'}), 400
 
-        print("Processing completed successfully", flush=True)
+            # Save the PDF file
+            filepath, filename = save_pdf_file(file)
+
+            # Get boxes for this file from the boxes data
+            file_index = int(file_key.split('[')[1].split(']')[0])
+            file_boxes = boxes.get(str(file_index), {})
+
+            # Process boxes data for this file
+            try:
+                processed_boxes = process_boxes_data(
+                    json.dumps(file_boxes), filepath)
+                print(f"Processed boxes data for {filename}:",
+                      processed_boxes, flush=True)
+            except ValueError as e:
+                return jsonify({'error': f'Error processing boxes for {filename}: {str(e)}'}), 400
+
+            # Save the boxes data
+            print(f"Processing boxes data to save for{filename}...",
+                  flush=True)
+            boxes_filepath = save_boxes_data(processed_boxes, filename)
+
+            # Process PDF with camelot
+            output_files = process_pdf_with_camelot(filepath, processed_boxes)
+
+            results.append({
+                'filename': filename,
+                'pdf_path': filepath,
+                'boxes_path': boxes_filepath,
+                'output_files': output_files
+            })
+
+        print("Processing completed successfully for all files", flush=True)
         return jsonify({
-            'message': 'PDF and boxes data received successfully',
-            'pdf_path': filepath,
-            'boxes_path': boxes_filepath,
-            'output_files': output_files
+            'message': 'All PDFs and boxes data processed successfully',
+            'results': results
         }), 200
 
     except Exception as e:

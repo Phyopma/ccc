@@ -142,27 +142,31 @@ function App() {
     }
 
     try {
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const formData = new FormData();
-        formData.append("file", selectedFiles[i]);
-        formData.append("boxes", JSON.stringify(boxesByFile[i] || {}));
+      const formData = new FormData();
 
-        const submitResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+      // Append all files with unique keys
+      selectedFiles.forEach((file, index) => {
+        formData.append(`files[${index}]`, file);
+      });
 
-        const data = await submitResponse.json();
+      // Append all boxes data as a single JSON string
+      formData.append("boxes", JSON.stringify(boxesByFile));
 
-        if (!submitResponse.ok) {
-          throw new Error(data.error || "Failed to submit PDF and boxes");
+      const submitResponse = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
+        {
+          method: "POST",
+          body: formData,
         }
+      );
 
-        console.log(`Submission successful for file ${i + 1}:`, data);
+      const data = await submitResponse.json();
+
+      if (!submitResponse.ok) {
+        throw new Error(data.error || "Failed to submit PDF and boxes");
       }
+
+      console.log("Submission successful:", data);
     } catch (err) {
       console.error("Error submitting PDFs:", err);
       setError(err.message);
