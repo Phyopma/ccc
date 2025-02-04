@@ -34,7 +34,7 @@ def process_pdf_with_pdfplumber(filepath, boxes):
                 page_texts = []
                 for bbox in target_areas:
                     text = page.within_bbox(bbox).extract_text(
-                        layout=True, y_density=7, x_density=9)
+                        layout=True, y_density=9, x_density=9)
                     if text:
                         page_texts.append(text.strip())
 

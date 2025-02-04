@@ -14,6 +14,17 @@ from db import db
 app = Flask(__name__)
 CORS(app, resources=CORSConfig.RESOURCES)
 
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers',
+                         'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods',
+                         'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+
 # Initialize application configuration
 Config.init_app()
 app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
@@ -39,6 +50,7 @@ def submit_pdf():
             return jsonify({'error': 'Invalid boxes data format'}), 400
 
         results = []
+        # Process each file sequentially
         for file_key, file in files.items():
             if file.filename == '':
                 continue
@@ -46,6 +58,7 @@ def submit_pdf():
             if not allowed_file(file.filename):
                 return jsonify({'error': f'Invalid file type for {file.filename}. Only PDF files are allowed'}), 400
 
+            print(f"Processing file: {file.filename}", flush=True)
             # Save the PDF file
             filepath, filename = save_pdf_file(file)
 
@@ -53,52 +66,63 @@ def submit_pdf():
                 # Get boxes for this file from the boxes data
                 file_index = int(file_key.split('[')[1].split(']')[0])
                 file_boxes = boxes.get(str(file_index), {})
+                if not file_boxes:
+                    print(f"No boxes found for file {filename}", flush=True)
+                    continue
 
                 # Process boxes data for this file
                 processed_boxes = process_boxes_data(
                     json.dumps(file_boxes), filepath)
-                print(f"Processed boxes data for {filename}:",
-                      processed_boxes, flush=True)
+                print(f"""Processed boxes data for {
+                      filename}:""", processed_boxes, flush=True)
 
                 # Save the boxes data
-                print(f"Processing boxes data to save for {filename}...",
-                      flush=True)
                 boxes_filepath = save_boxes_data(processed_boxes, filename)
+                print(f"""Saved boxes data for {filename} to {
+                      boxes_filepath}""", flush=True)
 
                 # Process PDF with pdfplumber
                 output_files = process_pdf_with_pdfplumber(
                     filepath, processed_boxes)
 
-                # Process extracted text with OpenAI page by page
+                # Process extracted text page by page
                 file_results = []
                 for page_data in output_files:
-                    try:
-                        transactions = process_transaction_text(
-                            page_data['text'], filename, page_data['page_number'])
+                    page_number = page_data['page_number']
+                    print(f"""Processing page {page_number} of {
+                          filename}""", flush=True)
 
+                    try:
+                        # Process transactions for this page
+                        transactions = process_transaction_text(
+                            page_data['text'])
+
+                        print(f"""Processed transactions for page {
+                              page_number} of {filename}""", flush=True)
                         # Store processed data in MongoDB
-                        try:
-                            db['extracted_texts'].insert_one({
-                                'text': page_data['text'],
-                                'page_number': page_data['page_number'],
-                                'file_path': filepath,
-                                'transactions': transactions.model_dump(),
-                                'created_at': datetime.now()
-                            })
-                        except Exception as db_error:
-                            print(f"""MongoDB insertion error: {
-                                  str(db_error)}""", flush=True)
-                            # Continue processing even if database operation fails
-                            pass
+                        # try:
+                        #     db['extracted_texts'].insert_one({
+                        #         'filename': filename,
+                        #         'text': page_data['text'],
+                        #         'page_number': page_number,
+                        #         'file_path': filepath,
+                        #         'transactions': transactions.model_dump(),
+                        #         'created_at': datetime.now()
+                        #     })
+                        #     print(f"""Stored data for page {
+                        #           page_number} in MongoDB""", flush=True)
+                        # except Exception as db_error:
+                        #     print(f"""MongoDB insertion error for {filename}, page {
+                        #           page_number}: {str(db_error)}""", flush=True)
+                        #     continue
 
                         file_results.append({
-                            'page_number': page_data['page_number'],
+                            'page_number': page_number,
                             'transactions': transactions.model_dump()
                         })
                     except Exception as process_error:
-                        print(f"""Error processing page {page_data['page_number']}: {
-                              str(process_error)}""", flush=True)
-                        # Continue processing other pages even if one fails
+                        print(f"""Error processing page {page_number} of {
+                              filename}: {str(process_error)}""", flush=True)
                         continue
 
                 results.append({

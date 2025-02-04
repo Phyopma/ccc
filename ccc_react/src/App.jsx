@@ -13,6 +13,8 @@ function App() {
   const [boxesByFile, setBoxesByFile] = useState({});
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState("");
   const stageRef = useRef(null);
   const [stageDimensions, setStageDimensions] = useState({
     width: 800,
@@ -141,6 +143,10 @@ function App() {
       return;
     }
 
+    setIsSubmitting(true);
+    setSubmitProgress("Preparing files for submission...");
+    setError(null);
+
     try {
       const formData = new FormData();
 
@@ -152,6 +158,7 @@ function App() {
       // Append all boxes data as a single JSON string
       formData.append("boxes", JSON.stringify(boxesByFile));
 
+      setSubmitProgress("Uploading files and processing...");
       const submitResponse = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/submit`,
         {
@@ -166,10 +173,13 @@ function App() {
         throw new Error(data.error || "Failed to submit PDF and boxes");
       }
 
+      setSubmitProgress("Processing completed successfully!");
       console.log("Submission successful:", data);
     } catch (err) {
       console.error("Error submitting PDFs:", err);
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -185,6 +195,32 @@ function App() {
             error={error}
             selectedFiles={selectedFiles}
           />
+          {isSubmitting && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-md">
+              <div className="flex items-center">
+                <div className="mr-3">
+                  <svg
+                    className="animate-spin h-5 w-5 text-blue-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <span className="text-blue-700">{submitProgress}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {pdfFile && (
@@ -224,8 +260,32 @@ function App() {
               <div className="flex space-x-4">
                 <button
                   onClick={handleSubmit}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
-                  Submit All Files
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Submit All Files"
+                  )}
                 </button>
                 <button
                   onClick={() =>
