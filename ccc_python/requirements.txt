@@ -4,3 +4,4 @@ werkzeug==3.0.1
 pdfplumber
 openai
 pymongo
+pyjwt

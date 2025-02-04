@@ -11,6 +11,9 @@ class Config:
     MONGODB_URI = 'mongodb://localhost:27017'
     MONGODB_DATABASE = 'pdf_processor'
 
+    # JWT Configuration
+    JWT_SECRET_KEY = 'your-super-secret-key-please-change-in-production'
+
     @staticmethod
     def init_app():
         if not path.exists(Config.UPLOAD_FOLDER):

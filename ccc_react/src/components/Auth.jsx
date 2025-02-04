@@ -6,7 +6,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, signup } = useAuth();
+  const { login, signup, logout, user } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

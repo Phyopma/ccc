@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from db import db
+from token_utils import generate_token
 
 # Get users collection
 users_collection = db['users']
@@ -9,6 +10,9 @@ users_collection = db['users']
 
 def create_user(email: str, password: str) -> dict:
     """Create a new user with hashed password using pbkdf2:sha256 method"""
+    if not email or not password:
+        raise ValueError('Email and password are required')
+
     existing_user = users_collection.find_one({'email': email})
     if existing_user:
         raise ValueError('Email already exists')
@@ -27,13 +31,18 @@ def create_user(email: str, password: str) -> dict:
 
     user['_id'] = str(result.inserted_id)
     del user['password']
-    return user
+
+    # Generate token for the new user
+    token = generate_token(user)
+    return {'user': user, 'token': token}
 
 
 def verify_user(email: str, password: str) -> dict:
-    """Verify user credentials and return user data"""
-    user = users_collection.find_one({'email': email})
+    """Verify user credentials and return user data with token"""
+    if not email or not password:
+        raise ValueError('Email and password are required')
 
+    user = users_collection.find_one({'email': email})
     if not user or not check_password_hash(user['password'], password):
         raise ValueError('Invalid email or password')
 
@@ -42,4 +51,7 @@ def verify_user(email: str, password: str) -> dict:
         'email': user['email'],
         'created_at': user['created_at']
     }
-    return user_data
+
+    # Generate token for the authenticated user
+    token = generate_token(user_data)
+    return {'user': user_data, 'token': token}

@@ -3,7 +3,7 @@ from flask_cors import CORS
 import sys
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from config import Config, CORSConfig
 from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data, cleanup_uploads_folder
 from pdf_processor import process_pdf_with_pdfplumber
@@ -39,7 +39,10 @@ def signup():
             return jsonify({'error': 'Email and password are required'}), 400
 
         user = create_user(data['email'], data['password'])
-        return jsonify({'message': 'User created successfully', 'user': user}), 201
+        return jsonify({
+            'message': 'User created successfully',
+            'user': user
+        }), 201
 
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -65,7 +68,10 @@ def login():
             return jsonify({'error': 'Email and password are required'}), 400
 
         user = verify_user(data['email'], data['password'])
-        return jsonify({'message': 'Login successful', 'user': user}), 200
+        return jsonify({
+            'message': 'Login successful',
+            'user': user
+        }), 200
 
     except ValueError as e:
         return jsonify({'error': str(e)}), 401
