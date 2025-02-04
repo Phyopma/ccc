@@ -8,6 +8,8 @@ from config import Config, CORSConfig
 from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data, cleanup_uploads_folder
 from pdf_processor import process_pdf_with_pdfplumber
 from transaction_processor import process_transaction_text
+from db import db
+
 
 app = Flask(__name__)
 CORS(app, resources=CORSConfig.RESOURCES)
@@ -47,30 +49,27 @@ def submit_pdf():
             # Save the PDF file
             filepath, filename = save_pdf_file(file)
 
-            # Get boxes for this file from the boxes data
-            file_index = int(file_key.split('[')[1].split(']')[0])
-            file_boxes = boxes.get(str(file_index), {})
-
-            # Process boxes data for this file
             try:
+                # Get boxes for this file from the boxes data
+                file_index = int(file_key.split('[')[1].split(']')[0])
+                file_boxes = boxes.get(str(file_index), {})
+
+                # Process boxes data for this file
                 processed_boxes = process_boxes_data(
                     json.dumps(file_boxes), filepath)
                 print(f"Processed boxes data for {filename}:",
                       processed_boxes, flush=True)
-            except ValueError as e:
-                return jsonify({'error': f'Error processing boxes for {filename}: {str(e)}'}), 400
 
-            # Save the boxes data
-            print(f"Processing boxes data to save for{filename}...",
-                  flush=True)
-            boxes_filepath = save_boxes_data(processed_boxes, filename)
+                # Save the boxes data
+                print(f"Processing boxes data to save for {filename}...",
+                      flush=True)
+                boxes_filepath = save_boxes_data(processed_boxes, filename)
 
-            # Process PDF with pdfplumber
-            output_files = process_pdf_with_pdfplumber(
-                filepath, processed_boxes)
+                # Process PDF with pdfplumber
+                output_files = process_pdf_with_pdfplumber(
+                    filepath, processed_boxes)
 
-            # Process extracted text with OpenAI page by page
-            try:
+                # Process extracted text with OpenAI page by page
                 file_results = []
                 for page_data in output_files:
                     try:
@@ -89,17 +88,18 @@ def submit_pdf():
                         except Exception as db_error:
                             print(f"""MongoDB insertion error: {
                                   str(db_error)}""", flush=True)
-                            raise Exception(
-                                f"Database operation failed: {str(db_error)}")
+                            # Continue processing even if database operation fails
+                            pass
+
+                        file_results.append({
+                            'page_number': page_data['page_number'],
+                            'transactions': transactions.model_dump()
+                        })
                     except Exception as process_error:
                         print(f"""Error processing page {page_data['page_number']}: {
                               str(process_error)}""", flush=True)
-                        raise
-
-                    file_results.append({
-                        'page_number': page_data['page_number'],
-                        'transactions': transactions.model_dump()
-                    })
+                        # Continue processing other pages even if one fails
+                        continue
 
                 results.append({
                     'filename': filename,
@@ -107,21 +107,25 @@ def submit_pdf():
                     'boxes_path': boxes_filepath,
                     'pages': file_results
                 })
+
             except Exception as e:
-                print(f"Error processing transactions: {str(e)}", flush=True)
+                print(f"""Error processing file {
+                      filename}: {str(e)}""", flush=True)
                 results.append({
                     'filename': filename,
-                    'pdf_path': filepath,
-                    'boxes_path': boxes_filepath,
                     'error': str(e)
                 })
+                continue
+            finally:
+                # Clean up temporary files after processing
+                cleanup_uploads_folder(filepath)
 
-            # Clean up temporary files after processing
-            cleanup_uploads_folder(filepath)
+        if not results:
+            return jsonify({'error': 'No files were successfully processed'}), 400
 
         print("Processing completed successfully for all files", flush=True)
         return jsonify({
-            'message': 'All PDFs and boxes data processed successfully',
+            'message': 'PDFs and boxes data processed successfully',
             'results': results
         }), 200
 

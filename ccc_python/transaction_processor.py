@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 from db import transactions_collection
 
+
 # Initialize OpenAI client
 client = openai.OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
 
@@ -48,7 +49,7 @@ def process_transaction_text(transaction_text: str, file_name: str, page_number:
         """
 
         completion = client.beta.chat.completions.parse(
-            temperature=1,
+            temperature=0,
             model="llama3.2:3b",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that extracts structured transaction data from text."},
@@ -72,6 +73,7 @@ def process_transaction_text(transaction_text: str, file_name: str, page_number:
 
 def save_transactions(transactions: TransactionList):
     """Save individual transactions to MongoDB"""
+
     try:
         saved_ids = []
         for transaction in transactions.Transactions:
