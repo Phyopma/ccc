@@ -204,7 +204,7 @@ function App() {
       {!user ? (
         <Auth />
       ) : showDashboard ? (
-        <Dashboard />
+        <Dashboard setShowDashboard={setShowDashboard} />
       ) : (
         <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -212,11 +212,19 @@ function App() {
               PDF Annotation Tool
             </h1>
             <div className="flex space-x-4">
-              <button
-                onClick={() => setShowDashboard(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                View Dashboard
-              </button>
+              {showDashboard ? (
+                <button
+                  onClick={() => setShowDashboard(false)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                  Back to Upload
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowDashboard(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                  View Dashboard
+                </button>
+              )}
               <button
                 onClick={logout}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">

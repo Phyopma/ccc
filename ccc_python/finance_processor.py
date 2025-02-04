@@ -7,11 +7,19 @@ class FinanceProcessor:
         # Convert transactions to DataFrame
         df = pd.DataFrame([t for t in transactions])
 
-        # Convert date column to datetime
-        df["date"] = pd.to_datetime(df["date"])
-
-        # Extract month and year for aggregation
-        df["month"] = df["date"].dt.to_period("M")
+        # Convert date column to datetime with error handling
+        try:
+            df["date"] = pd.to_datetime(
+                df["date"], format="mixed", errors="coerce")
+            # Drop rows with invalid dates
+            df = df.dropna(subset=["date"])
+            # Ensure dates are within reasonable bounds (e.g., between 1900 and 2100)
+            df = df[(df["date"].dt.year >= 1900) &
+                    (df["date"].dt.year <= 2100)]
+            # Extract month and year for aggregation
+            df["month"] = df["date"].dt.to_period("M")
+        except Exception as e:
+            raise e
 
         # Adjust income and expenses based on prefix
         df["income"] = df["amount"].where(
@@ -65,8 +73,13 @@ class FinanceProcessor:
         # Compute Savings Rate
         savings = pd.merge(monthly_income, monthly_expenses,
                            on="month", how="left").fillna(0)
-        savings["savings_rate"] = (
-            savings["monthly_income"] - savings["monthly_expenses"]) / savings["monthly_income"]
+
+        # Ensure savings rate is between 0 and 1
+        savings["savings_rate"] = savings.apply(
+            lambda x: max(0, min(
+                1, (x["monthly_income"] - x["monthly_expenses"]) / max(x["monthly_income"], 0.01))),
+            axis=1
+        )
 
         # Merge all financial variables
         finance_features = dti.merge(savings.drop(
