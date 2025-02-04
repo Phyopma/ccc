@@ -1,8 +1,12 @@
-import camelot
+import pdfplumber
+import os
+import sys
+from datetime import datetime
+from db import db
 
 
-def process_pdf_with_camelot(filepath, boxes):
-    """Process PDF with camelot using the provided boxes coordinates"""
+def process_pdf_with_pdfplumber(filepath, boxes):
+    """Process PDF with pdfplumber using the provided boxes coordinates"""
     if not boxes:
         raise ValueError("No boxes provided for processing")
 
@@ -12,15 +16,38 @@ def process_pdf_with_camelot(filepath, boxes):
             continue
 
         try:
-            target_areas = [box for box in boxes[page_num]]
+            # Convert page number to zero-based index
+            page_index = int(page_num) - 1
+            # Convert target areas to list of tuples
+            target_areas = [tuple(map(float, area.split(',')))
+                            for area in boxes[page_num]]
+            print(f"""Processing page {
+                  page_num} with target areas: {target_areas}""")
 
-            tables = camelot.read_pdf(filepath, pages=str(page_num),
-                                      flavor='stream', table_areas=target_areas, row_tol=10, strip_text='\n', edge_tol=500)
+            with pdfplumber.open(filepath) as pdf:
+                if page_index < 0 or page_index >= len(pdf.pages):
+                    print(f"Invalid page number {page_num}")
+                    continue
 
-            if len(tables) > 0:
-                output_path = f'{filepath}_page{page_num}.csv'
-                tables.export(output_path, f='csv')
-                results.append(output_path)
+                page = pdf.pages[page_index]
+                # Process each box area individually
+                page_texts = []
+                for bbox in target_areas:
+                    text = page.within_bbox(bbox).extract_text(
+                        layout=True, y_density=7, x_density=9)
+                    if text:
+                        page_texts.append(text.strip())
+
+                if page_texts:
+                    text = '\n'.join(page_texts)
+                    page_result = f"Page {page_num}:\n{text}"
+                    result_doc = {
+                        "text": page_result,
+                        "page_number": int(page_num),
+                        "file_path": filepath
+                    }
+                    results.append(result_doc)
+
         except (KeyError, IndexError) as e:
             print(f"Error processing page {page_num}: {str(e)}")
             continue
@@ -29,6 +56,6 @@ def process_pdf_with_camelot(filepath, boxes):
             continue
 
     if not results:
-        raise ValueError("No tables were successfully extracted from the PDF")
+        raise ValueError("No text was successfully extracted from the PDF")
 
     return results

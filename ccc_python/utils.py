@@ -41,9 +41,9 @@ def process_boxes_data(boxes_data, filepath):
 
                 # Create coordinate string with proper rounding
                 x1 = round(x, 2)
-                y1 = round(pdf_height - y, 2)  # Bottom Y coordinate
+                y1 = round(y, 2)  # Bottom Y coordinate
                 x2 = round(x + width, 2)
-                y2 = round(pdf_height - y - height, 2)  # Top Y coordinate
+                y2 = round(y + height, 2)  # Top Y coordinate
 
                 # Format coordinates as string
                 coord_str = f"{x1},{y1},{x2},{y2}"
@@ -64,3 +64,23 @@ def save_boxes_data(boxes, filename):
     with open(boxes_filepath, 'w') as f:
         json.dump(boxes, f)
     return boxes_filepath
+
+
+def cleanup_uploads_folder(filepath):
+    """Clean up temporary files in the uploads folder except output.txt"""
+    directory = os.path.dirname(filepath)
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            name, extension = os.path.splitext(filename)
+            # don't delete output.txt and filename with transaction prefix and .json extension
+            if name.startswith('transactions_') and extension == '.json':
+                continue
+
+            if filename == 'output.txt':
+                continue
+
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Error removing file {file_path}: {str(e)}")

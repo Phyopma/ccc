@@ -1,7 +1,6 @@
 flask==3.0.2
 flask-cors==4.0.0
 werkzeug==3.0.1
-camelot-py[cv]
-PyPDF2==3.0.1
-opencv-python-headless==4.8.1.78
-ghostscript
+pdfplumber
+openai
+pymongo

@@ -2,9 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sys
 import json
+import os
+from datetime import datetime
 from config import Config, CORSConfig
-from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data
-from pdf_processor import process_pdf_with_camelot
+from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data, cleanup_uploads_folder
+from pdf_processor import process_pdf_with_pdfplumber
+from transaction_processor import process_transaction_text
 
 app = Flask(__name__)
 CORS(app, resources=CORSConfig.RESOURCES)
@@ -62,15 +65,59 @@ def submit_pdf():
                   flush=True)
             boxes_filepath = save_boxes_data(processed_boxes, filename)
 
-            # Process PDF with camelot
-            output_files = process_pdf_with_camelot(filepath, processed_boxes)
+            # Process PDF with pdfplumber
+            output_files = process_pdf_with_pdfplumber(
+                filepath, processed_boxes)
 
-            results.append({
-                'filename': filename,
-                'pdf_path': filepath,
-                'boxes_path': boxes_filepath,
-                'output_files': output_files
-            })
+            # Process extracted text with OpenAI page by page
+            try:
+                file_results = []
+                for page_data in output_files:
+                    try:
+                        transactions = process_transaction_text(
+                            page_data['text'], filename, page_data['page_number'])
+
+                        # Store processed data in MongoDB
+                        try:
+                            db['extracted_texts'].insert_one({
+                                'text': page_data['text'],
+                                'page_number': page_data['page_number'],
+                                'file_path': filepath,
+                                'transactions': transactions.model_dump(),
+                                'created_at': datetime.now()
+                            })
+                        except Exception as db_error:
+                            print(f"""MongoDB insertion error: {
+                                  str(db_error)}""", flush=True)
+                            raise Exception(
+                                f"Database operation failed: {str(db_error)}")
+                    except Exception as process_error:
+                        print(f"""Error processing page {page_data['page_number']}: {
+                              str(process_error)}""", flush=True)
+                        raise
+
+                    file_results.append({
+                        'page_number': page_data['page_number'],
+                        'transactions': transactions.model_dump()
+                    })
+
+                results.append({
+                    'filename': filename,
+                    'pdf_path': filepath,
+                    'boxes_path': boxes_filepath,
+                    'pages': file_results
+                })
+            except Exception as e:
+                print(f"Error processing transactions: {str(e)}", flush=True)
+                results.append({
+                    'filename': filename,
+                    'pdf_path': filepath,
+                    'boxes_path': boxes_filepath,
+                    'error': str(e)
+                })
+
+            # Clean up temporary files after processing
+            cleanup_uploads_folder(filepath)
 
         print("Processing completed successfully for all files", flush=True)
         return jsonify({

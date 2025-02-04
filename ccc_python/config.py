@@ -7,6 +7,10 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     ALLOWED_EXTENSIONS = {'pdf'}
 
+    # MongoDB Configuration
+    MONGODB_URI = 'mongodb://localhost:27017'
+    MONGODB_DATABASE = 'pdf_processor'
+
     @staticmethod
     def init_app():
         if not path.exists(Config.UPLOAD_FOLDER):
