@@ -4,9 +4,11 @@ import PDFViewer from "./components/PDFViewer";
 import Auth from "./components/Auth";
 import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
+import { useTheme } from "./context/ThemeContext";
 
 function App() {
   const { user, logout } = useAuth();
+  const { darkMode, toggleDarkMode } = useTheme();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [pdfFile, setPdfFile] = useState(null);
@@ -200,15 +202,34 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 py-8 px-4 sm:px-6 lg:px-8">
+    <div
+      className={`min-h-screen py-8 px-4 sm:px-6 lg:px-8 ${
+        darkMode ? "bg-gray-900" : "bg-gray-50"
+      }`}>
+      <button
+        onClick={toggleDarkMode}
+        className={`fixed bottom-4 left-4 p-4 rounded-full shadow-lg ${
+          darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"
+        } hover:opacity-80 transition-opacity z-50 flex items-center justify-center w-12 h-12`}>
+        {darkMode ? "🌞" : "🌙"}
+      </button>
       {!user ? (
         <Auth />
       ) : showDashboard ? (
         <Dashboard setShowDashboard={setShowDashboard} />
       ) : (
-        <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div
+          className={`max-w-5xl mx-auto rounded-lg shadow-xl overflow-hidden ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}>
+          <div
+            className={`p-6 border-b ${
+              darkMode ? "border-gray-700" : "border-gray-200"
+            } flex justify-between items-center`}>
+            <h1
+              className={`text-2xl font-bold ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
               PDF Annotation Tool
             </h1>
             <div className="flex space-x-4">
@@ -232,14 +253,20 @@ function App() {
               </button>
             </div>
           </div>
-          <div className="p-6 border-b border-gray-200">
+          <div
+            className={`p-6 border-b ${
+              darkMode ? "border-gray-700" : "border-gray-200"
+            }`}>
             <PDFUploader
               onFileChange={onFileChange}
               error={error}
               selectedFiles={selectedFiles}
             />
             {isSubmitting && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-md">
+              <div
+                className={`mt-4 p-4 ${
+                  darkMode ? "bg-blue-900" : "bg-blue-50"
+                } rounded-md`}>
                 <div className="flex items-center">
                   <div className="mr-3">
                     <svg
@@ -260,7 +287,12 @@ function App() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   </div>
-                  <span className="text-blue-700">{submitProgress}</span>
+                  <span
+                    className={`${
+                      darkMode ? "text-blue-200" : "text-blue-700"
+                    }`}>
+                    {submitProgress}
+                  </span>
                 </div>
               </div>
             )}
@@ -269,11 +301,20 @@ function App() {
           {pdfFile && (
             <>
               <div className="p-6 space-y-6">
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <h2 className="text-sm font-medium text-gray-700 mb-2">
+                <div
+                  className={`p-4 rounded-lg mb-4 ${
+                    darkMode ? "bg-gray-700" : "bg-gray-50"
+                  }`}>
+                  <h2
+                    className={`text-sm font-medium mb-2 ${
+                      darkMode ? "text-gray-200" : "text-gray-700"
+                    }`}>
                     Instructions:
                   </h2>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul
+                    className={`text-sm space-y-1 ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>
                     <li>• Hold Alt + Click and drag to draw a box</li>
                     <li>• Click on any box to delete it</li>
                     <li>• Use the navigation buttons to move between pages</li>
@@ -299,7 +340,10 @@ function App() {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+              <div
+                className={`flex items-center justify-between p-4 rounded-lg ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                }`}>
                 <div className="flex space-x-4">
                   <button
                     onClick={handleSubmit}
@@ -349,7 +393,10 @@ function App() {
                     Next File
                   </button>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div
+                  className={`text-sm ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
+                  }`}>
                   File {currentFileIndex + 1} of {selectedFiles.length} | Page{" "}
                   {currentPage} of {numPages || "-"}
                 </div>

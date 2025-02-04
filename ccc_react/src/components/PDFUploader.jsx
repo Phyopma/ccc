@@ -1,13 +1,25 @@
 import React from "react";
+import { useTheme } from "../context/ThemeContext";
 
 const PDFUploader = ({ onFileChange, error, selectedFiles }) => {
+  const { darkMode } = useTheme();
+
   return (
     <div className="space-y-4">
-      <div className="mb-6 text-center p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors duration-200">
+      <div
+        className={`mb-6 text-center p-8 ${
+          darkMode ? "bg-gray-700" : "bg-gray-50"
+        } rounded-lg border-2 border-dashed ${
+          darkMode
+            ? "border-gray-500 hover:border-blue-400"
+            : "border-gray-300 hover:border-blue-500"
+        } transition-colors duration-200`}>
         <label className="block cursor-pointer">
           <div className="mb-4">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className={`mx-auto h-12 w-12 ${
+                darkMode ? "text-gray-400" : "text-gray-400"
+              }`}
               stroke="currentColor"
               fill="none"
               viewBox="0 0 48 48"
@@ -19,8 +31,18 @@ const PDFUploader = ({ onFileChange, error, selectedFiles }) => {
                 strokeLinejoin="round"
               />
             </svg>
-            <div className="flex text-sm text-gray-600 justify-center">
-              <span className="relative bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+            <div
+              className={`flex text-sm ${
+                darkMode ? "text-gray-300" : "text-gray-600"
+              } justify-center`}>
+              <span
+                className={`relative ${
+                  darkMode ? "bg-gray-700" : "bg-white"
+                } rounded-md font-medium ${
+                  darkMode
+                    ? "text-blue-400 hover:text-blue-300"
+                    : "text-blue-600 hover:text-blue-500"
+                } focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500`}>
                 <span>Upload PDF files</span>
                 <input
                   type="file"
@@ -32,7 +54,10 @@ const PDFUploader = ({ onFileChange, error, selectedFiles }) => {
               </span>
               <p className="pl-1">or drag and drop</p>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p
+              className={`text-xs ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              } mt-2`}>
               Multiple PDF files up to 10MB each
             </p>
           </div>
@@ -40,19 +65,33 @@ const PDFUploader = ({ onFileChange, error, selectedFiles }) => {
       </div>
 
       {selectedFiles && selectedFiles.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">
+        <div
+          className={`${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } rounded-lg shadow p-4`}>
+          <h3
+            className={`text-sm font-medium ${
+              darkMode ? "text-gray-200" : "text-gray-900"
+            } mb-3`}>
             Selected Files:
           </h3>
           <ul className="space-y-2">
             {selectedFiles.map((file, index) => (
               <li
                 key={index}
-                className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md">
-                <span className="text-sm text-gray-600 truncate">
+                className={`flex items-center justify-between py-2 px-3 ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                } rounded-md`}>
+                <span
+                  className={`text-sm ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
+                  } truncate`}>
                   {file.name}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span
+                  className={`text-xs ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}>
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </span>
               </li>
@@ -62,7 +101,10 @@ const PDFUploader = ({ onFileChange, error, selectedFiles }) => {
       )}
 
       {error && (
-        <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded-md flex items-center justify-center">
+        <div
+          className={`mt-2 text-sm text-red-600 ${
+            darkMode ? "bg-red-900" : "bg-red-50"
+          } p-2 rounded-md flex items-center justify-center`}>
           <svg
             className="h-5 w-5 text-red-500 mr-2"
             fill="none"

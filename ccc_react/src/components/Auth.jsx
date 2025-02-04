@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -7,6 +8,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { login, signup, logout, user } = useAuth();
+  const { darkMode } = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,10 +26,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div
+      className={`min-h-screen flex items-center justify-center ${
+        darkMode ? "bg-gray-900" : "bg-gray-50"
+      } py-12 px-4 sm:px-6 lg:px-8`}>
+      <div
+        className={`max-w-md w-full space-y-8 ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        } p-8 rounded-lg shadow-xl`}>
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2
+            className={`mt-6 text-center text-3xl font-extrabold ${
+              darkMode ? "text-gray-200" : "text-gray-900"
+            }`}>
             {isLogin ? "Sign in to your account" : "Create new account"}
           </h2>
         </div>
@@ -37,7 +48,11 @@ const Auth = () => {
               <input
                 type="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
+                  darkMode
+                    ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                    : "border-gray-300 placeholder-gray-500 text-gray-900"
+                } rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -47,7 +62,11 @@ const Auth = () => {
               <input
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
+                  darkMode
+                    ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-400"
+                    : "border-gray-300 placeholder-gray-500 text-gray-900"
+                } rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -56,7 +75,12 @@ const Auth = () => {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div
+              className={`text-red-500 text-sm text-center ${
+                darkMode ? "bg-red-900" : "bg-red-50"
+              } p-2 rounded-md`}>
+              {error}
+            </div>
           )}
 
           <div>
@@ -70,7 +94,11 @@ const Auth = () => {
 
         <div className="text-center">
           <button
-            className="text-indigo-600 hover:text-indigo-500"
+            className={`${
+              darkMode
+                ? "text-indigo-400 hover:text-indigo-300"
+                : "text-indigo-600 hover:text-indigo-500"
+            }`}
             onClick={() => setIsLogin(!isLogin)}>
             {isLogin
               ? "Need an account? Sign up"
