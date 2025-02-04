@@ -22,9 +22,11 @@ class Config:
 class CORSConfig:
     RESOURCES = {
         r"/api/*": {
-            "origins": "*",
+            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "expose_headers": ["Content-Type", "Authorization"]
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "send_wildcard": False
         }
     }

@@ -18,13 +18,14 @@ class Transaction(BaseModel):
     prefix: int
     amount: float
     category: Optional[str]
+    user_id: str
 
 
 class TransactionList(BaseModel):
     Transactions: List[Transaction]
 
 
-def process_transaction_text(transaction_text: str) -> TransactionList:
+def process_transaction_text(transaction_text: str, user_id: str) -> TransactionList:
     """Process transaction text using OpenAI API and return structured data"""
     print("called for this text", transaction_text)
 
@@ -34,7 +35,8 @@ def process_transaction_text(transaction_text: str) -> TransactionList:
 
         # If text is shorter than max size, process it directly
         if len(transaction_text) <= MAX_CHUNK_SIZE:
-            return _process_single_chunk(transaction_text)
+            tmp = _process_single_chunk(transaction_text)
+            return save_transactions(tmp, user_id)
 
         # Split text into chunks at newline boundaries
         chunks = []
@@ -56,6 +58,7 @@ def process_transaction_text(transaction_text: str) -> TransactionList:
         all_transactions = []
         for chunk in chunks:
             chunk_result = _process_single_chunk(chunk)
+            save_transactions(chunk_result, user_id)
             all_transactions.extend(chunk_result.Transactions)
 
         # Create combined TransactionList
@@ -63,7 +66,7 @@ def process_transaction_text(transaction_text: str) -> TransactionList:
             Transactions=all_transactions)
 
         # Save all transactions
-        save_transactions(combined_transactions)
+        # save_transactions(combined_transactions, user_id)
 
         return combined_transactions
     except Exception as e:
@@ -103,14 +106,14 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
             response_format=TransactionList
         )
         response = completion.choices[0].message
-        save_transactions(response.parsed)
+        # Note: user_id will be added in the main process_transaction_text function
         return response.parsed
     except Exception as e:
         print(f"Error processing transactions: {str(e)}")
         raise e
 
 
-def save_transactions(transactions: TransactionList):
+def save_transactions(transactions: TransactionList, user_id: str):
     """Save individual transactions to MongoDB"""
 
     try:
@@ -119,6 +122,7 @@ def save_transactions(transactions: TransactionList):
             # Convert transaction to dictionary and add timestamp
             transaction_dict = transaction.model_dump()
             transaction_dict['created_at'] = datetime.now()
+            transaction_dict['user_id'] = user_id
 
             # Insert into MongoDB
             result = transactions_collection.insert_one(transaction_dict)

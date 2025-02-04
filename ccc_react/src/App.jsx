@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import PDFUploader from "./components/PDFUploader";
 import PDFViewer from "./components/PDFViewer";
+import Auth from "./components/Auth";
+import { useAuth } from "./context/AuthContext";
 
 function App() {
+  const { user } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [pdfFile, setPdfFile] = useState(null);
@@ -150,6 +153,9 @@ function App() {
     try {
       const formData = new FormData();
 
+      // Add user ID to form data
+      formData.append("user_id", user._id);
+
       // Append all files with unique keys
       selectedFiles.forEach((file, index) => {
         formData.append(`files[${index}]`, file);
@@ -185,135 +191,139 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            PDF Annotation Tool
-          </h1>
-          <PDFUploader
-            onFileChange={onFileChange}
-            error={error}
-            selectedFiles={selectedFiles}
-          />
-          {isSubmitting && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-md">
-              <div className="flex items-center">
-                <div className="mr-3">
-                  <svg
-                    className="animate-spin h-5 w-5 text-blue-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+      {!user ? (
+        <Auth />
+      ) : (
+        <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              PDF Annotation Tool
+            </h1>
+            <PDFUploader
+              onFileChange={onFileChange}
+              error={error}
+              selectedFiles={selectedFiles}
+            />
+            {isSubmitting && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-md">
+                <div className="flex items-center">
+                  <div className="mr-3">
+                    <svg
+                      className="animate-spin h-5 w-5 text-blue-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <span className="text-blue-700">{submitProgress}</span>
                 </div>
-                <span className="text-blue-700">{submitProgress}</span>
               </div>
-            </div>
+            )}
+          </div>
+
+          {pdfFile && (
+            <>
+              <div className="p-6 space-y-6">
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <h2 className="text-sm font-medium text-gray-700 mb-2">
+                    Instructions:
+                  </h2>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Hold Alt + Click and drag to draw a box</li>
+                    <li>• Click on any box to delete it</li>
+                    <li>• Use the navigation buttons to move between pages</li>
+                  </ul>
+                </div>
+
+                <div className="relative rounded-lg flex justify-center p-4">
+                  <PDFViewer
+                    file={pdfFile}
+                    currentPage={currentPage}
+                    numPages={numPages}
+                    scale={scale}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={onDocumentLoadError}
+                    boxes={[
+                      ...(boxesByFile[currentFileIndex]?.[currentPage] || []),
+                      ...(previewBox ? [previewBox] : []),
+                    ]}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                <div className="flex space-x-4">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      "Submit All Files"
+                    )}
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentFileIndex(Math.max(0, currentFileIndex - 1))
+                    }
+                    disabled={currentFileIndex <= 0}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                    Previous File
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentFileIndex(
+                        Math.min(selectedFiles.length - 1, currentFileIndex + 1)
+                      )
+                    }
+                    disabled={currentFileIndex >= selectedFiles.length - 1}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                    Next File
+                  </button>
+                </div>
+                <div className="text-sm text-gray-600">
+                  File {currentFileIndex + 1} of {selectedFiles.length} | Page{" "}
+                  {currentPage} of {numPages || "-"}
+                </div>
+              </div>
+            </>
           )}
         </div>
-
-        {pdfFile && (
-          <>
-            <div className="p-6 space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <h2 className="text-sm font-medium text-gray-700 mb-2">
-                  Instructions:
-                </h2>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Hold Alt + Click and drag to draw a box</li>
-                  <li>• Click on any box to delete it</li>
-                  <li>• Use the navigation buttons to move between pages</li>
-                </ul>
-              </div>
-
-              <div className="relative rounded-lg flex justify-center p-4">
-                <PDFViewer
-                  file={pdfFile}
-                  currentPage={currentPage}
-                  numPages={numPages}
-                  scale={scale}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  boxes={[
-                    ...(boxesByFile[currentFileIndex]?.[currentPage] || []),
-                    ...(previewBox ? [previewBox] : []),
-                  ]}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-              <div className="flex space-x-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Submit All Files"
-                  )}
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentFileIndex(Math.max(0, currentFileIndex - 1))
-                  }
-                  disabled={currentFileIndex <= 0}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
-                  Previous File
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentFileIndex(
-                      Math.min(selectedFiles.length - 1, currentFileIndex + 1)
-                    )
-                  }
-                  disabled={currentFileIndex >= selectedFiles.length - 1}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
-                  Next File
-                </button>
-              </div>
-              <div className="text-sm text-gray-600">
-                File {currentFileIndex + 1} of {selectedFiles.length} | Page{" "}
-                {currentPage} of {numPages || "-"}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 }

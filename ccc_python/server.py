@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import sys
 import json
@@ -9,20 +9,11 @@ from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_da
 from pdf_processor import process_pdf_with_pdfplumber
 from transaction_processor import process_transaction_text
 from db import db
+from auth import create_user, verify_user
 
 
 app = Flask(__name__)
-CORS(app, resources=CORSConfig.RESOURCES)
-
-
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers',
-                         'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods',
-                         'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+CORS(app, resources=CORSConfig.RESOURCES, supports_credentials=True)
 
 
 # Initialize application configuration
@@ -30,8 +21,64 @@ Config.init_app()
 app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
 
 
+@app.route('/api/auth/signup', methods=['POST', 'OPTIONS'])
+def signup():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin',
+                             request.headers.get('Origin'))
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+    try:
+        data = request.get_json()
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({'error': 'Email and password are required'}), 400
+
+        user = create_user(data['email'], data['password'])
+        return jsonify({'message': 'User created successfully', 'user': user}), 201
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auth/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin',
+                             request.headers.get('Origin'))
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+    try:
+        data = request.get_json()
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({'error': 'Email and password are required'}), 400
+
+        user = verify_user(data['email'], data['password'])
+        return jsonify({'message': 'Login successful', 'user': user}), 200
+
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/submit', methods=['POST'])
 def submit_pdf():
+    # Get user ID from request
+    user_id = request.form.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
     try:
         print("Received request", flush=True)
         # Check if files are present in request
@@ -95,26 +142,10 @@ def submit_pdf():
                     try:
                         # Process transactions for this page
                         transactions = process_transaction_text(
-                            page_data['text'])
+                            page_data['text'], user_id)
 
                         print(f"""Processed transactions for page {
                               page_number} of {filename}""", flush=True)
-                        # Store processed data in MongoDB
-                        # try:
-                        #     db['extracted_texts'].insert_one({
-                        #         'filename': filename,
-                        #         'text': page_data['text'],
-                        #         'page_number': page_number,
-                        #         'file_path': filepath,
-                        #         'transactions': transactions.model_dump(),
-                        #         'created_at': datetime.now()
-                        #     })
-                        #     print(f"""Stored data for page {
-                        #           page_number} in MongoDB""", flush=True)
-                        # except Exception as db_error:
-                        #     print(f"""MongoDB insertion error for {filename}, page {
-                        #           page_number}: {str(db_error)}""", flush=True)
-                        #     continue
 
                         file_results.append({
                             'page_number': page_number,
