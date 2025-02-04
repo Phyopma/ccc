@@ -16,10 +16,12 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeframe, setTimeframe] = useState("monthly"); // monthly, weekly, yearly
+  const [timeframe, setTimeframe] = useState("monthly");
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalSpending, setTotalSpending] = useState(0);
+  const [financeFeatures, setFinanceFeatures] = useState([]);
   const { user } = useAuth();
+
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
@@ -36,14 +38,15 @@ const Dashboard = () => {
         }
         const data = await response.json();
         setTransactions(data.transactions);
+        setFinanceFeatures(data.finance_features || []);
 
         // Calculate totals
         const income = data.transactions
-          .filter((t) => t.type === "income")
-          .reduce((sum, t) => sum + t.amount, 0);
+          .filter((t) => t.prefix === 1)
+          .reduce((sum, t) => sum + t.prefix * t.amount, 0);
         const spending = data.transactions
-          .filter((t) => t.type === "expense")
-          .reduce((sum, t) => sum + t.amount, 0);
+          .filter((t) => t.prefix === -1)
+          .reduce((sum, t) => sum + t.prefix * t.amount, 0);
 
         setTotalIncome(income);
         setTotalSpending(spending);
@@ -82,7 +85,7 @@ const Dashboard = () => {
         acc[dateKey] = { date: dateKey, income: 0, spending: 0 };
       }
 
-      if (transaction.type === "income") {
+      if (transaction.prefix === 1) {
         acc[dateKey].income += transaction.amount;
       } else {
         acc[dateKey].spending += transaction.amount;
@@ -107,23 +110,24 @@ const Dashboard = () => {
   }
 
   const chartData = processDataForChart();
+  const latestFeatures = financeFeatures[financeFeatures.length - 1] || {};
 
   return (
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
           <h3 className="text-lg font-medium text-gray-900">Total Income</h3>
           <p className="mt-2 text-3xl font-bold text-green-600">
             ${totalIncome.toFixed(2)}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
           <h3 className="text-lg font-medium text-gray-900">Total Spending</h3>
           <p className="mt-2 text-3xl font-bold text-red-600">
             ${totalSpending.toFixed(2)}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
           <h3 className="text-lg font-medium text-gray-900">Net Balance</h3>
           <p className="mt-2 text-3xl font-bold text-blue-600">
             ${(totalIncome - totalSpending).toFixed(2)}
@@ -131,7 +135,105 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Financial Health Metrics
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">
+                  Debt-to-Income Ratio
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {(latestFeatures.dti_ratio * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-500"
+                  style={{
+                    width: `${Math.min(latestFeatures.dti_ratio * 100, 100)}%`,
+                  }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Savings Rate</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {(latestFeatures.savings_rate * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      latestFeatures.savings_rate * 100,
+                      100
+                    )}%`,
+                  }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">
+                  Credit Utilization
+                </span>
+                <span className="text-sm font-medium text-gray-900">
+                  {(latestFeatures.credit_utilization * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-yellow-500 transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      latestFeatures.credit_utilization * 100,
+                      100
+                    )}%`,
+                  }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Loan Overview
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Loan Payment</span>
+              <span className="text-sm font-medium text-gray-900">
+                ${latestFeatures.total_loan_payment?.toFixed(2) || "0.00"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Number of Active Loans
+              </span>
+              <span className="text-sm font-medium text-gray-900">
+                {latestFeatures.num_loans_paid || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Average Transaction Amount
+              </span>
+              <span className="text-sm font-medium text-gray-900">
+                ${latestFeatures.avg_transaction_amount?.toFixed(2) || "0.00"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Existing Income vs Spending chart */}
+      <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">
             Income vs Spending
@@ -160,7 +262,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow overflow-x-auto">
+      {/* Existing Recent Transactions table */}
+      <div className="bg-white p-6 rounded-lg shadow overflow-x-auto transform transition-all duration-300 hover:shadow-lg">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           Recent Transactions
         </h2>
@@ -171,13 +274,16 @@ const Dashboard = () => {
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Category
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
               </th>
             </tr>
           </thead>
@@ -187,21 +293,24 @@ const Dashboard = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {format(new Date(transaction.date), "MMM d, yyyy")}
                 </td>
+                <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-[200px] break-words">
+                  {transaction.description}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {transaction.category.toUpperCase()}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      transaction.type === "income"
+                      transaction.prefix === 1
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}>
-                    {transaction.type}
+                    {transaction.prefix === 1 ? "Credit" : "Debit"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   ${transaction.amount.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {transaction.description}
                 </td>
               </tr>
             ))}

@@ -41,6 +41,8 @@ def get_transactions():
 
         # Fetch transactions from MongoDB
         transactions = list(transactions_collection.find({'user_id': user_id}))
+        print(f"""Retrieved {len(transactions)} transactions for user {
+              user_id}""", flush=True)
 
         # Convert ObjectId to string for JSON serialization
         for transaction in transactions:
@@ -48,12 +50,33 @@ def get_transactions():
             transaction['created_at'] = transaction['created_at'].isoformat()
             transaction['date'] = transaction['date'].isoformat()
 
-        return jsonify({
-            'message': 'Transactions fetched successfully',
-            'transactions': transactions
-        }), 200
+        # Process transactions through FinanceProcessor
+        try:
+            from finance_processor import FinanceProcessor
+            finance_features = FinanceProcessor.process_transactions(
+                transactions)
+            print(f"""Successfully processed financial features for user {
+                  user_id}""", flush=True)
+
+            # Convert Period objects to strings for JSON serialization
+            finance_features['month'] = finance_features['month'].astype(str)
+
+            return jsonify({
+                'message': 'Transactions processed successfully',
+                'transactions': transactions,
+                'finance_features': finance_features.to_dict(orient='records')
+            }), 200
+        except Exception as process_error:
+            print(f"""Error processing financial features: {
+                  str(process_error)}""", flush=True)
+            return jsonify({
+                'message': 'Transactions retrieved but processing failed',
+                'transactions': transactions,
+                'error': str(process_error)
+            }), 500
 
     except Exception as e:
+        print(f"Error retrieving transactions: {str(e)}", flush=True)
         return jsonify({'error': str(e)}), 500
 
 
