@@ -8,7 +8,7 @@ from config import Config, CORSConfig
 from utils import allowed_file, save_pdf_file, process_boxes_data, save_boxes_data, cleanup_uploads_folder
 from pdf_processor import process_pdf_with_pdfplumber
 from transaction_processor import process_transaction_text
-from db import db
+from db import db, transactions_collection
 from auth import create_user, verify_user
 
 
@@ -19,6 +19,42 @@ CORS(app, resources=CORSConfig.RESOURCES, supports_credentials=True)
 # Initialize application configuration
 Config.init_app()
 app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
+
+
+@app.route('/api/transactions', methods=['GET', 'OPTIONS'])
+def get_transactions():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin',
+                             request.headers.get('Origin'))
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+    try:
+        # Get user ID from request
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User ID is required'}), 400
+
+        # Fetch transactions from MongoDB
+        transactions = list(transactions_collection.find({'user_id': user_id}))
+
+        # Convert ObjectId to string for JSON serialization
+        for transaction in transactions:
+            transaction['_id'] = str(transaction['_id'])
+            transaction['created_at'] = transaction['created_at'].isoformat()
+            transaction['date'] = transaction['date'].isoformat()
+
+        return jsonify({
+            'message': 'Transactions fetched successfully',
+            'transactions': transactions
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/auth/signup', methods=['POST', 'OPTIONS'])

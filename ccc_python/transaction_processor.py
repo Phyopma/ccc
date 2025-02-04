@@ -27,11 +27,10 @@ class TransactionList(BaseModel):
 
 def process_transaction_text(transaction_text: str, user_id: str) -> TransactionList:
     """Process transaction text using OpenAI API and return structured data"""
-    print("called for this text", transaction_text)
 
     try:
         # Define maximum chunk size (in characters)
-        MAX_CHUNK_SIZE = 4000
+        MAX_CHUNK_SIZE = 2000
 
         # If text is shorter than max size, process it directly
         if len(transaction_text) <= MAX_CHUNK_SIZE:
@@ -78,21 +77,29 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
     """Process a single chunk of transaction text"""
     current_year = datetime.now().year
     prompt = f"""
-    Extract the following fields from the transaction text below, paying special attention to multi-row entries:
+    Parse transaction text into structured data with these fields:
+    - Date: YYYY-MM-DD format (use {current_year} if year missing)
+      * Handle various date formats (DD/MM, MM/DD, etc.)
 
-    - **Date:** Extract the date in the format "YYYY-MM-DD". If the year is not provided in the input, use the current year ({current_year}).
-    - **Description:** Provide a concise summary of the transaction details (maximum 10 words). If the description spans multiple rows, combine them.
-    - **Prefix:** Use 1 for a credit transaction (money in) and -1 for a debit transaction (money out).
-    - **Amount:** Extract the transaction amount as a decimal number with 2 decimal places (e.g., 17.43, 100.00). For transactions with multiple columns (in/out/balance), use the 'in' or 'out' column and ignore the balance column. If the amount is split across rows, combine them correctly.
-    - **Category:** Identify the type of transaction (e.g., rent, payment, groceries, etc). Use the transaction description and type to determine the most appropriate category.
+    - Description: Concise summary (<10 words)
+      * Keep merchant/payee names intact
+      * Standardize common transaction descriptions
 
-    Important parsing rules:
-    1. Some transactions may span multiple rows - combine them into a single transaction
-    2. there might be a transaction has reference numbers or additional details in subsequent rows.
-    3. Ensure transactions are properly combined when split across multiple rows
+    - Prefix: 1=credit(in), -1=debit(out)
+      * Use transaction context to determine direction
+      * Look for keywords like "payment", "deposit", "withdrawal"
+      * Consider positive/negative amount indicators
 
-    Return the output strictly as a JSON object.
-    Transaction text: \"{transaction_text}\"
+    - Amount: Decimal with 2 places
+      * Extract numerical values only
+
+    - Category: Transaction type
+      * Categorize based on description keywords
+      * Common categories: groceries, utilities, rent, salary, transfer
+      * Use merchant name to help determine category
+
+
+    Text: \"{transaction_text}\"
     """
 
     try:
@@ -100,13 +107,12 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
             temperature=0,
             model="llama3.2:3b",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that extracts structured transaction data from text."},
+                {"role": "system", "content": "You are a financial data extraction expert that accurately parses transaction data from text while maintaining data integrity and consistency."},
                 {"role": "user", "content": prompt}
             ],
             response_format=TransactionList
         )
         response = completion.choices[0].message
-        # Note: user_id will be added in the main process_transaction_text function
         return response.parsed
     except Exception as e:
         print(f"Error processing transactions: {str(e)}")

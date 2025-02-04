@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import PDFUploader from "./components/PDFUploader";
 import PDFViewer from "./components/PDFViewer";
 import Auth from "./components/Auth";
+import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
     height: 1000,
   });
   const [error, setError] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
     if (selectedFiles.length > 0) {
@@ -181,6 +183,10 @@ function App() {
 
       setSubmitProgress("Processing completed successfully!");
       console.log("Submission successful:", data);
+      setSelectedFiles([]);
+      setPdfFile(null);
+      setBoxesByFile({});
+      setShowDashboard(true);
     } catch (err) {
       console.error("Error submitting PDFs:", err);
       setError(err.message);
@@ -197,17 +203,26 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 py-8 px-4 sm:px-6 lg:px-8">
       {!user ? (
         <Auth />
+      ) : showDashboard ? (
+        <Dashboard />
       ) : (
         <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">
               PDF Annotation Tool
             </h1>
-            <button
-              onClick={logout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">
-              Sign Out
-            </button>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setShowDashboard(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                View Dashboard
+              </button>
+              <button
+                onClick={logout}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">
+                Sign Out
+              </button>
+            </div>
           </div>
           <div className="p-6 border-b border-gray-200">
             <PDFUploader
