@@ -2,9 +2,7 @@ ccc_python/uploads
 
 ccc_python/.venv
 
-
 ccc_react/.env
-
-
+ccc_python/models/*.pkl
 
 .DS_Store
