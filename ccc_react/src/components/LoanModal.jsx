@@ -219,11 +219,16 @@ const LoanModal = ({ isOpen, onClose, darkMode }) => {
                       : "bg-white border-gray-300 text-gray-900"
                   } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}>
                   <option value="">Select term</option>
-                  <option value="12">12 months</option>
+                  {[12, 24, 36, 48, 60, 72, 84, 96, 108, 120].map((term) => (
+                    <option className="justify-start" key={term} value={term}>
+                      {term} months
+                    </option>
+                  ))}
+                  {/* <option value="12">12 months</option>
                   <option value="24">24 months</option>
                   <option value="36">36 months</option>
                   <option value="48">48 months</option>
-                  <option value="60">60 months</option>
+                  <option value="60">60 months</option> */}
                 </select>
               </div>
               <div>

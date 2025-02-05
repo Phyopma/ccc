@@ -223,14 +223,23 @@ const Dashboard = ({ setShowDashboard }) => {
           darkMode={darkMode}
         />
       )}
-      <div className="bg-white shadow">
-        <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
+      <div className={`${darkMode ? "bg-gray-800" : "bg-white"} shadow`}>
+        <div
+          className={`px-6 py-4 flex justify-between items-center border-b ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1
+              className={`text-2xl font-bold ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
               Financial Analysis Dashboard
             </h1>
             {dateRange.start && dateRange.end && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                } mt-1`}>
                 {format(dateRange.start, "MMMM d, yyyy")} -{" "}
                 {format(dateRange.end, "MMMM d, yyyy")}
               </p>
@@ -257,22 +266,44 @@ const Dashboard = ({ setShowDashboard }) => {
       </div>
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
-            <h3 className="text-lg font-medium text-gray-900">Total Income</h3>
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105`}>
+            <h3
+              className={`text-lg font-medium ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
+              Total Income
+            </h3>
             <p className="mt-2 text-3xl font-bold text-green-600">
               ${totalIncome.toFixed(2)}
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
-            <h3 className="text-lg font-medium text-gray-900">
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105`}>
+            <h3
+              className={`text-lg font-medium ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
               Total Spending
             </h3>
             <p className="mt-2 text-3xl font-bold text-red-600">
               ${-totalSpending.toFixed(2)}
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105">
-            <h3 className="text-lg font-medium text-gray-900">Net Balance</h3>
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow transform transition-all duration-300 hover:scale-105`}>
+            <h3
+              className={`text-lg font-medium ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
+              Net Balance
+            </h3>
             <p className="mt-2 text-3xl font-bold text-blue-600">
               ${(totalIncome + totalSpending).toFixed(2)}
             </p>
@@ -280,9 +311,15 @@ const Dashboard = ({ setShowDashboard }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg`}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3
+                className={`text-lg font-medium ${
+                  darkMode ? "text-gray-200" : "text-gray-900"
+                }`}>
                 Financial Health Metrics
               </h3>
               <div className="flex items-center space-x-2">
@@ -293,7 +330,11 @@ const Dashboard = ({ setShowDashboard }) => {
                     setSelectedMonth("");
                     setSelectedYear("");
                   }}
-                  className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  className={`rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-gray-200"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}>
                   <option value="all">All Time Average</option>
                   {availablePeriods.months.length > 0 && (
                     <option value="monthly">Monthly</option>
@@ -307,7 +348,11 @@ const Dashboard = ({ setShowDashboard }) => {
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    className={`rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}>
                     <option value="">Select Month</option>
                     {availablePeriods.months.map((month) => (
                       <option key={month} value={month}>
@@ -321,7 +366,11 @@ const Dashboard = ({ setShowDashboard }) => {
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    className={`rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}>
                     <option value="">Select Year</option>
                     {availablePeriods.years.map((year) => (
                       <option key={year} value={year}>
@@ -336,14 +385,23 @@ const Dashboard = ({ setShowDashboard }) => {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>
                     Debt-to-Income Ratio
                   </span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-200" : "text-gray-900"
+                    }`}>
                     {(periodFeatures.dti_ratio * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-2 ${
+                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                  } rounded-full overflow-hidden`}>
                   <div
                     className="h-full bg-blue-500 transition-all duration-500"
                     style={{
@@ -357,12 +415,23 @@ const Dashboard = ({ setShowDashboard }) => {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Savings Rate</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>
+                    Savings Rate
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-200" : "text-gray-900"
+                    }`}>
                     {(periodFeatures.savings_rate * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-2 ${
+                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                  } rounded-full overflow-hidden`}>
                   <div
                     className="h-full bg-green-500 transition-all duration-500"
                     style={{
@@ -376,14 +445,23 @@ const Dashboard = ({ setShowDashboard }) => {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>
                     Credit Utilization
                   </span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-200" : "text-gray-900"
+                    }`}>
                     {(periodFeatures.credit_utilization * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-2 ${
+                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                  } rounded-full overflow-hidden`}>
                   <div
                     className="h-full bg-yellow-500 transition-all duration-500"
                     style={{
@@ -397,32 +475,56 @@ const Dashboard = ({ setShowDashboard }) => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <div
+            className={`${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg`}>
+            <h3
+              className={`text-lg font-medium ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              } mb-4`}>
               Loan Overview
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
+                <span
+                  className={`text-sm ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
                   Total Loan Payment
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span
+                  className={`text-sm font-medium ${
+                    darkMode ? "text-gray-200" : "text-gray-900"
+                  }`}>
                   ${periodFeatures.total_loan_payment?.toFixed(2) || "0.00"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
+                <span
+                  className={`text-sm ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
                   Number of Active Loans
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span
+                  className={`text-sm font-medium ${
+                    darkMode ? "text-gray-200" : "text-gray-900"
+                  }`}>
                   {periodFeatures.num_loans_paid || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
+                <span
+                  className={`text-sm ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
                   Average Transaction Amount
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span
+                  className={`text-sm font-medium ${
+                    darkMode ? "text-gray-200" : "text-gray-900"
+                  }`}>
                   ${periodFeatures.avg_transaction_amount?.toFixed(2) || "0.00"}
                 </span>
               </div>
@@ -431,15 +533,25 @@ const Dashboard = ({ setShowDashboard }) => {
         </div>
 
         {/* Existing Income vs Spending chart */}
-        <div className="bg-white p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg">
+        <div
+          className={`${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } p-6 rounded-lg shadow transform transition-all duration-300 hover:shadow-lg`}>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2
+              className={`text-xl font-bold ${
+                darkMode ? "text-gray-200" : "text-gray-900"
+              }`}>
               Income vs Spending
             </h2>
             <select
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              className={`rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
@@ -448,11 +560,27 @@ const Dashboard = ({ setShowDashboard }) => {
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={darkMode ? "#374151" : "#E5E7EB"}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke={darkMode ? "#9CA3AF" : "#4B5563"}
+                />
+                <YAxis stroke={darkMode ? "#9CA3AF" : "#4B5563"} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: darkMode ? "#1F2937" : "#FFFFFF",
+                    border: "none",
+                    borderRadius: "0.375rem",
+                    color: darkMode ? "#E5E7EB" : "#1F2937",
+                  }}
+                  labelStyle={{ color: darkMode ? "#E5E7EB" : "#1F2937" }}
+                />
+                <Legend
+                  wrapperStyle={{ color: darkMode ? "#E5E7EB" : "#1F2937" }}
+                />
                 <Bar dataKey="income" fill="#10B981" name="Income" />
                 <Bar dataKey="spending" fill="#EF4444" name="Spending" />
               </BarChart>
@@ -461,40 +589,76 @@ const Dashboard = ({ setShowDashboard }) => {
         </div>
 
         {/* Existing Recent Transactions table */}
-        <div className="bg-white p-6 rounded-lg shadow overflow-x-auto transform transition-all duration-300 hover:shadow-lg">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div
+          className={`${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } p-6 rounded-lg shadow overflow-x-auto transform transition-all duration-300 hover:shadow-lg`}>
+          <h2
+            className={`mb-4 text-xl font-bold ${
+              darkMode ? "text-gray-200" : "text-gray-900"
+            }`}>
             Recent Transactions
           </h2>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
+          <table
+            className={`min-w-full divide-y ${
+              darkMode ? "divide-gray-700" : "divide-gray-200"
+            }`}>
+            <thead className={darkMode ? "bg-gray-900" : "bg-gray-50"}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  } uppercase tracking-wider`}>
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  } uppercase tracking-wider`}>
                   Description
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  } uppercase tracking-wider`}>
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  } uppercase tracking-wider`}>
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  } uppercase tracking-wider`}>
                   Amount
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody
+              className={`${darkMode ? "bg-gray-800" : "bg-white"} divide-y ${
+                darkMode ? "divide-gray-700" : "divide-gray-200"
+              }`}>
               {transactions.slice(0, 10).map((transaction, index) => (
                 <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </td>
-                  <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-[200px] break-words">
+                  <td
+                    className={`px-6 py-4 whitespace-normal text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    } max-w-[200px] break-words`}>
                     {transaction.description}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
                     {transaction.category.toUpperCase()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -507,7 +671,10 @@ const Dashboard = ({ setShowDashboard }) => {
                       {transaction.prefix === 1 ? "Credit" : "Debit"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
                     ${transaction.amount.toFixed(2)}
                   </td>
                 </tr>

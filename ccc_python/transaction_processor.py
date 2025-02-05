@@ -92,6 +92,7 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
 
     - Amount: Decimal with 2 places
       * Extract numerical values only
+      * All amounts should be positive, if negative make prefix -1 and amount positive
 
     - Category: Transaction type
       * Categorize based on description keywords
