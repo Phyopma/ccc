@@ -79,15 +79,15 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
     prompt = f"""
     Parse transaction text into structured data with these fields:
     - Date: YYYY-MM-DD format (use {current_year} if year missing)
-      * Handle various date formats (DD/MM, MM/DD, etc.)
+      * Handle various date formats (DD/MM, MM/DD, etc.) Don't confuse DD with YY.
+      * YYYY should be between 1950 and 2080
 
     - Description: Concise summary (<10 words)
       * Keep merchant/payee names intact
       * Standardize common transaction descriptions
 
     - Prefix: 1=credit(in), -1=debit(out)
-      * Use transaction context to determine direction
-      * Look for keywords like "payment", "deposit", "withdrawal"
+      * Use description position first then keywords to determine prefix
       * Consider positive/negative amount indicators
 
     - Amount: Decimal with 2 places
@@ -96,7 +96,7 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
 
     - Category: Transaction type
       * Categorize based on description keywords
-      * Common categories: groceries, utilities, rent, salary, transfer
+      * Common categories: groceries, utilities, rent, salary, transfer, loan, credit, etc.
       * Use merchant name to help determine category
 
 
@@ -105,7 +105,7 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
 
     try:
         completion = client.beta.chat.completions.parse(
-            temperature=0,
+            temperature=0.5,
             model="llama3.2:3b",
             messages=[
                 {"role": "system", "content": "You are a financial data extraction expert that accurately parses transaction data from text while maintaining data integrity and consistency."},
