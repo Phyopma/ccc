@@ -70,6 +70,10 @@ class FinanceProcessor:
                        on="month", how="left").fillna(0)
         dti["dti_ratio"] = dti["total_loan_payment"] / dti["monthly_income"]
 
+        # Calculate max DTI ratio over 1-year interval
+        dti["max_annual_dti"] = dti["dti_ratio"].rolling(
+            window=12, min_periods=1).max()
+
         # Compute Savings Rate
         savings = pd.merge(monthly_income, monthly_expenses,
                            on="month", how="left").fillna(0)

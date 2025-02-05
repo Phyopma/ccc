@@ -10,6 +10,9 @@ from pdf_processor import process_pdf_with_pdfplumber
 from transaction_processor import process_transaction_text
 from db import db, transactions_collection
 from auth import create_user, verify_user
+import pandas as pd
+from loan_model import LoanModel
+from finance_processor import FinanceProcessor
 
 
 app = Flask(__name__)
@@ -52,7 +55,6 @@ def get_transactions():
 
         # Process transactions through FinanceProcessor
         try:
-            from finance_processor import FinanceProcessor
             finance_features = FinanceProcessor.process_transactions(
                 transactions)
             print(f"""Successfully processed financial features for user {
@@ -251,6 +253,77 @@ def submit_pdf():
 
     except Exception as e:
         print(f"Error occurred: {str(e)}", file=sys.stderr, flush=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/loan/apply', methods=['POST', 'OPTIONS'])
+def apply_loan():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin',
+                             request.headers.get('Origin'))
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+    try:
+        # Get loan application data from request
+        data = request.get_json()
+
+        required_fields = ['user_id', 'age',
+                           'credit_score', 'term', 'loan_amount']
+
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'error': f'Missing required fields. Required: {required_fields}'
+            }), 400
+
+        # Get user transactions
+        transactions = list(transactions_collection.find(
+            {'user_id': data['user_id']}))
+
+        if not transactions:
+            return jsonify({
+                'error': 'No transaction history found for user'
+            }), 400
+
+        # Process transactions to get financial features
+        finance_features = FinanceProcessor.process_transactions(
+            transactions)
+
+        # Calculate annual income (multiply monthly by 12 and use the most recent data)
+        latest_features = finance_features.sort_values(
+            'month', ascending=False).iloc[0]
+        annual_income = latest_features['monthly_income'] * 12
+        # Use the maximum DTI ratio over the past year for risk assessment
+        dtir1 = latest_features['max_annual_dti']
+
+        # Prepare data for loan model
+        loan_data = pd.DataFrame({
+            'age': [float(data['age'])],
+            'Credit_Score': [float(data['credit_score'])],
+            'income': [float(annual_income)],
+            'term': [float(data['term'])],
+            'loan_amount': [float(data['loan_amount'])],
+            'dtir1': [float(dtir1)]
+        })
+
+        # Initialize loan model and get predictions
+        loan_model = LoanModel()
+        approval_prob, apr_rate = loan_model.predict(loan_data)
+
+        return jsonify({
+            'approved': bool(approval_prob),
+            'apr_rate': float(apr_rate),
+            'annual_income': float(annual_income),
+            'dti_ratio': float(dtir1)
+        }), 200
+
+    except Exception as e:
+        print(f"Error processing loan application: {str(e)}", flush=True)
         return jsonify({'error': str(e)}), 500
 
 

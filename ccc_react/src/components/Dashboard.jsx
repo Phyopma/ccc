@@ -11,8 +11,11 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import LoanModal from "./LoanModal";
 
 const Dashboard = ({ setShowDashboard }) => {
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +27,7 @@ const Dashboard = ({ setShowDashboard }) => {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const { user, logout } = useAuth();
+  const { darkMode } = useTheme();
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   const [availablePeriods, setAvailablePeriods] = useState({
     months: [],
@@ -212,6 +216,13 @@ const Dashboard = ({ setShowDashboard }) => {
   // Update the JSX where metrics are displayed
   return (
     <div className="space-y-6">
+      {isLoanModalOpen && (
+        <LoanModal
+          isOpen={isLoanModalOpen}
+          onClose={() => setIsLoanModalOpen(false)}
+          darkMode={darkMode}
+        />
+      )}
       <div className="bg-white shadow">
         <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
           <div>
@@ -226,6 +237,11 @@ const Dashboard = ({ setShowDashboard }) => {
             )}
           </div>
           <div className="flex space-x-4">
+            <button
+              onClick={() => setIsLoanModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+              Get Loan
+            </button>
             <button
               onClick={() => setShowDashboard(false)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">

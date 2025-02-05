@@ -5,3 +5,9 @@ pdfplumber
 openai
 pymongo
 pyjwt
+pandas
+joblib
+imblearn
+scikit-learn==1.2.2
+numpy==1.21.6
+xgboost
