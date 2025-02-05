@@ -511,7 +511,7 @@ const Dashboard = ({ setShowDashboard }) => {
                   className={`text-sm font-medium ${
                     darkMode ? "text-gray-200" : "text-gray-900"
                   }`}>
-                  {periodFeatures.num_loans_paid || 0}
+                  {parseInt(periodFeatures.num_loans_paid) || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -641,44 +641,47 @@ const Dashboard = ({ setShowDashboard }) => {
               className={`${darkMode ? "bg-gray-800" : "bg-white"} divide-y ${
                 darkMode ? "divide-gray-700" : "divide-gray-200"
               }`}>
-              {transactions.slice(0, 10).map((transaction, index) => (
-                <tr key={index}>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
-                    {format(new Date(transaction.date), "MMM d, yyyy")}
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-normal text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    } max-w-[200px] break-words`}>
-                    {transaction.description}
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
-                    {transaction.category.toUpperCase()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        transaction.prefix === 1
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+              {transactions
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 10)
+                .map((transaction, index) => (
+                  <tr key={index}>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
                       }`}>
-                      {transaction.prefix === 1 ? "Credit" : "Debit"}
-                    </span>
-                  </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
-                    ${transaction.amount.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+                      {format(new Date(transaction.date), "MMM d, yyyy")}
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-normal text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      } max-w-[200px] break-words`}>
+                      {transaction.description}
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}>
+                      {transaction.category.toUpperCase()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          transaction.prefix === 1
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}>
+                        {transaction.prefix === 1 ? "Credit" : "Debit"}
+                      </span>
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}>
+                      ${transaction.amount.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

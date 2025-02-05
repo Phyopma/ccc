@@ -29,9 +29,11 @@ def process_transaction_text(transaction_text: str, user_id: str) -> Transaction
     """Process transaction text using OpenAI API and return structured data"""
 
     try:
+        # Remove first line (Page #)
+        transaction_texts = transaction_text.split('\n')[1:]
         # Define maximum chunk size (in characters)
-        MAX_CHUNK_SIZE = 2000
-
+        MAX_CHUNK_SIZE = 2300
+        first_line = transaction_texts[0]
         # If text is shorter than max size, process it directly
         if len(transaction_text) <= MAX_CHUNK_SIZE:
             tmp = _process_single_chunk(transaction_text)
@@ -41,21 +43,22 @@ def process_transaction_text(transaction_text: str, user_id: str) -> Transaction
         chunks = []
         current_chunk = ""
 
-        for line in transaction_text.split('\n'):
+        for line in transaction_texts:
             if len(current_chunk) + len(line) + 1 <= MAX_CHUNK_SIZE:
                 current_chunk += line + '\n'
             else:
                 if current_chunk:
                     chunks.append(current_chunk)
-                current_chunk = line + '\n'
+                current_chunk = first_line + '\n'+line + '\n'
 
         # Add the last chunk if it exists
         if current_chunk:
-            chunks.append(current_chunk)
+            chunks.append(first_line+'\n'+current_chunk)
 
         # Process each chunk and combine results
         all_transactions = []
         for chunk in chunks:
+            print("this chunk is processing: ", chunk)
             chunk_result = _process_single_chunk(chunk)
             save_transactions(chunk_result, user_id)
             all_transactions.extend(chunk_result.Transactions)
@@ -78,16 +81,17 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
     current_year = datetime.now().year
     prompt = f"""
     Parse transaction text into structured data with these fields:
-    - Date: YYYY-MM-DD format (use {current_year} if year missing)
-      * Handle various date formats (DD/MM, MM/DD, etc.) Don't confuse DD with YY.
+    - Date: Give in YYYY-MM-DD format (use {current_year} if year missing)
       * YYYY should be between 1950 and 2080
+      * Handle various date formats (DD/MM, MM/DD, etc.) Don't confuse DD with YY.
 
     - Description: Concise summary (<10 words)
       * Keep merchant/payee names intact
       * Standardize common transaction descriptions
+      * Make sure add description for all vaild transactions
 
-    - Prefix: 1=credit(in), -1=debit(out)
-      * Use description position first then keywords to determine prefix
+    - Prefix: 1=incoming(credit/deposit, etc), -1=outgoing(debit/withdrawal, etc)
+      * Use amount position first then keywords to determine prefix
       * Consider positive/negative amount indicators
 
     - Amount: Decimal with 2 places
@@ -95,17 +99,27 @@ def _process_single_chunk(transaction_text: str) -> TransactionList:
       * All amounts should be positive, if negative make prefix -1 and amount positive
 
     - Category: Transaction type
-      * Categorize based on description keywords
-      * Common categories: groceries, utilities, rent, salary, transfer, loan, credit, etc.
-      * Use merchant name to help determine category
+      * Categorize based on description keywords and merchant name
+      * Use standardized categories:
+        - Income: salary, wages, deposits
+        - Housing: rent, mortgage, utilities
+        - Food: groceries, restaurants, dining
+        - Transportation: fuel, parking, transit
+        - Shopping: retail, clothing, electronics
+        - Bills: phone, internet, insurance
+        - Entertainment: movies, games, subscriptions
+        - Health: medical, pharmacy, fitness
+        - Education: tuition, books, courses
+        - Financial: investments, transfers, loans
 
+    *** Notes: Sometimes when u detect 3 columns; ignore last column since they are just the aggregate of previous 2 columns.
 
     Text: \"{transaction_text}\"
     """
 
     try:
         completion = client.beta.chat.completions.parse(
-            temperature=0.5,
+            temperature=0.43,
             model="llama3.2:3b",
             messages=[
                 {"role": "system", "content": "You are a financial data extraction expert that accurately parses transaction data from text while maintaining data integrity and consistency."},

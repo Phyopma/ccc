@@ -13,7 +13,7 @@ class LoanModel:
         self.approval_model = None
         self.apr_model = None
         self.load_models()
-        self.threshold = 0.4
+        self.threshold = 0.36
 
     def load_models(self):
         """Load trained models from disk with error handling."""

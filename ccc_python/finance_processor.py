@@ -13,19 +13,24 @@ class FinanceProcessor:
                 df["date"], format="mixed", errors="coerce")
             # Drop rows with invalid dates
             df = df.dropna(subset=["date"])
-            # Ensure dates are within reasonable bounds (e.g., between 1900 and 2100)
-            df = df[(df["date"].dt.year >= 1900) &
-                    (df["date"].dt.year <= 2100)]
+            # Ensure dates are within reasonable bounds (between 1950 and 2080)
+            df = df[(df["date"].dt.year >= 1950) &
+                    (df["date"].dt.year <= 2080)]
             # Extract month and year for aggregation
             df["month"] = df["date"].dt.to_period("M")
         except Exception as e:
             raise e
 
-        # Adjust income and expenses based on prefix
-        df["income"] = df["amount"].where(
-            df["prefix"] == 1, 0)  # Income if prefix = 1
-        df["expense"] = df["amount"].where(
-            df["prefix"] == -1, 0)  # Expense if prefix = -1
+        # Adjust income and expenses based on prefix and category
+        df["income"] = df.apply(
+            lambda x: x["amount"] if x["prefix"] == 1 and x["category"] in [
+                "income", "financial"] else 0,
+            axis=1
+        )
+        df["expense"] = df.apply(
+            lambda x: x["amount"] if x["prefix"] == -1 else 0,
+            axis=1
+        )
 
         # Compute total monthly income
         monthly_income = df.groupby(["month"])["income"].sum().reset_index()
@@ -46,7 +51,7 @@ class FinanceProcessor:
             columns={"amount": "avg_transaction_amount"}, inplace=True)
 
         # Compute loan-related metrics
-        loan_df = df[df["category"] == "loan"]
+        loan_df = df[(df["category"] == "Financial") & (df["prefix"] == -1)]
         loan_payments = loan_df.groupby(["month"])["expense"].agg([
             ("total_loan_payment", lambda x: abs(sum(x))),
             ("num_loans_paid", "count")
@@ -54,7 +59,7 @@ class FinanceProcessor:
 
         # Compute credit card expenses and utilization
         credit_expenses = df[
-            (df["category"] == "credit_card") &
+            (df["category"].isin(["Shopping", "Entertainment", "Food"])) &
             (df["prefix"] == -1)
         ].groupby(["month"])["amount"].sum().abs().reset_index()
         credit_expenses.rename(
@@ -68,7 +73,12 @@ class FinanceProcessor:
         # Compute Debt-to-Income Ratio (DTI)
         dti = pd.merge(monthly_income, loan_payments,
                        on="month", how="left").fillna(0)
-        dti["dti_ratio"] = dti["total_loan_payment"] / dti["monthly_income"]
+        # Ensure DTI ratio is between 0 and 1, handling zero monthly income
+        dti["dti_ratio"] = dti.apply(
+            lambda x: min(1, x["total_loan_payment"] /
+                          max(x["monthly_income"], 0.01)),
+            axis=1
+        )
 
         # Calculate max DTI ratio over 1-year interval
         dti["max_annual_dti"] = dti["dti_ratio"].rolling(

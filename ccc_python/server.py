@@ -216,7 +216,7 @@ def submit_pdf():
 
                         file_results.append({
                             'page_number': page_number,
-                            'transactions': transactions.model_dump()
+                            'transactions': transactions.to_list()
                         })
                     except Exception as process_error:
                         print(f"""Error processing page {page_number} of {
